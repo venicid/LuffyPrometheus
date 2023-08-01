@@ -1,0 +1,12 @@
+[Unit]
+Description=pushgateway server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/opt/app/pushgateway/pushgateway
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=pushgateway
+[Install]
+WantedBy=default.target

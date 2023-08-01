@@ -1,0 +1,9 @@
+## variables
+
+PERF_DIR=/App/perf
+SC_NAME=perf.sh
+APP=ORIGIN_APP
+
+*/2 * * * * root    /bin/bash /App/perf/perf.sh /App/perf  $APP
+
+

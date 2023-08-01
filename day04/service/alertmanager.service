@@ -1,0 +1,21 @@
+[Unit]
+Description="alertmanager"
+Documentation=https://alertmanager.io/
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/app/alertmanager/alertmanager  --config.file=/opt/app/alertmanager/alertmanager.yml  --storage.path=/opt/app/alertmanager/data/
+
+Restart=on-failure
+RestartSecs=5s
+SuccessExitStatus=0
+LimitNOFILE=65536
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=alertmanager
+
+
+[Install]
+WantedBy=multi-user.target
+

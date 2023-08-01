@@ -1,0 +1,228 @@
+# 监控三方向
+- 时序 metrics ：prometheus 、datadog saas服务商
+- 日志 logging ：loki elk
+- 链路 tracing
+
+# 时序4模块
+- 采集
+    - day01-02
+        - day01
+            - 简介
+            - 简单上手搭建使用
+                - prometheus
+                - 各种exporter的搭建使用
+                    - node_exporter ：官方维护的linux采集器
+                        - 黑白名单的使用：按需添加采集模块即可
+                        - 默认指标集合：go_ process_ promhttp
+                        - 本地的.prom文件
+                        - params ：collect 采集哪些模块
+                    - proccess_exporter：单进程的cpu 内存信息
+                        - 混合部署多进程共享机器资源 ，给出较高内存 cpu信息
+                        - 可用cmdline等过滤进程
+                        
+                    - blackbox_exporter：黑盒探针
+                        - 三个底层模块：http 、tcp、icmp
+                        - 可以在底层模块基础上再封装成常用模块：
+                            - http_2xx
+                            - http_2xx_post
+                            - ssh : tcp + 响应中包含指定字符串
+                            - http+指定请求headers
+                        - api接口探测、icmp探测
+                        - http icmp探测过程分stage 阶段耗时统计
+                        - http://github.com/ning1875/xprober 借鉴blackbox的代码：网络探测都可以借鉴这个
+                    - mysqld_export
+                    - redis_export
+                - 必须部署在本机的： node_exporter
+                - 探针型的：redis_exporter         
+           
+                - grafana搭建使用:
+                    - dashboard、template、table、DataSource
+                    -
+            - prometheus基础概念
+                - 四大指标类型：gauge、counter、histogram、summary
+                    - 表征分位值得：
+                        - histogram：bucket 代表属于这个段的个数
+                            - 服务做实时计算的：线性插值，开销大
+                        - summary：最终的结果：更准
+                            - 客户端，sdk上流式聚合，开销大
+                            
+                - 四种标签匹配模式：= != =~ !~
+                - 点：sample： ts(int64)+ value (float64) 共16字节 
+                - 标签：label :k,v string 
+                - 标签组：[]label
+                - 查询的结果：
+                    - vector :向量：instance_query : table 、alerm、record
+                    - matrix :矩阵：range_query：看一段时间的曲线
+        
+        - day02：采集的原理
+            - k8s的采集：prometheus为k8s做了哪些适配
+                - 服务发现：kubernetes_sd_config:
+                    - 发现node、pod、service、endpoint的即时变化：watch
+                - rebel：标签变化
+                    - 标签名字替换：适应服务发现标签太多
+                    - hashmod：
+                - 鉴权：k8s的组件接口都是要鉴权的：
+                    - token 
+                    - tls的证书            
+                    - k8s的sa cb 讲相关token 或证书挂载到prometheus中
+                        - prometheus在k8s外部也可以采集内部的数据
+                - pull模式+内部网络可达+ 各个组件metrics自暴露：
+                    - pod ip
+                    - pod不需要把数据还推送给 采集的agent
+            - push模型：pgw：使用+问题，动态分片打造ha
+            - 服务发现模式：文件、consul、其他的
+                - 文件很重要：通用的：
+                    - 可以和服务树很好的集成
+            - 采集端单点问题：
+                - 加大单个采集器的资源：
+                - hashmod静态分片：分所有address
+                - 动态分片：
+                    - 一致性哈希算法：分布式系统很常见
+                    - 基于文件的服务发现
+                    - 能够探活采集器的机制：consul service check
+                    
+            - exporter的管理是个问题：可以参考telegraf的大一统agent模式  
+            
+                     
+- 传输 & 存储
+    - day03
+        - 时序的存储模型：
+            - 写多读少
+            - 时间越远的数据 意义越小
+            - mysql不适合
+            - leveldb中的lsm数据结构适合
+                - 内存+wal日志+落盘
+                - compact 、排序、去重、合并，基于level的
+        - 数据压缩：省空间：facebook_gorilla压缩算法 16 byte-> 1.37 byte 11倍
+            - dod 压timestamp ：连续打点 相邻点时间 delta差为0 
+            - xor 压value：连续打点 值变化不剧烈
+        - prometheus本地存储：2kw并发写入的qps
+            - 分片锁
+            - 倒排索引
+            - mmap
+            - 定时的compact
+            - bloom filter
+        - 本地存储的问题：单点：
+            - remote_write 和read适配第三方存储
+                - m3db 、vm、thanos、对象存储、kafka、influxdb
+        - m3db：集群的、开源的
+            - 搭建
+            - 问题的总结：可能会oom
+        - thanos
+        - multi_remote_read：低成本纯prometheus 高可用存储方案
+            - prometheus可以remote_read prometheus自己
+            - prometheus可以remote_write prometheus自己
+            - 并非读所有存储
+            - 会merge结果：
+                - 缺的给你补上
+                - 重复的去重
+            - 如何保证副本：
+                - 一份job采集多次
+        - 路由的方案：
+            - 统一特征标签：分k8s集群使用最好        
+- 查询
+    - day05
+                    
+        - 前端展示：
+            - grafana：
+                - 数据源
+                - 查询接口
+                - 变量
+        - 后端接口：
+            - 数据查询接口:
+                - /query instance_query 一个点
+                    - alerm、record、table查询的
+                - /query_range range_query 一段时间
+                    - Resolution：分辨率：保证点不过多
+                    - 源码查看：
+                        - query_log的分段统计原理
+                        - 高基数的判断
+                - /label_name 查标签名字的
+                - /<label_name>/label_values 查标签值的
+                - /series 查标签+数据点的
+                
+            - 统计接口
+                - targets
+                - tsdb status
+                - flag
+                - runtime
+                - config
+                - rule、alertmanger
+                - service_discovery
+                               
+            - 管理接口：
+                - reload
+                - healthy
+        - 高基数的识别：
+            - query_log
+            - 采集器的tsdb status接口
+            - 识别到高基数：
+                - 封禁
+                - 通过预聚合提速
+        - 预聚合原理：record
+            - instance_query接口 
+            - record file
+                - expr 、record
+                - 做instance_query查询：
+                    - 本地
+                    - remote
+                - 查看是根据配置的record，写新的series
+                    - 写本地 或 multi_remote_write
+        - 预聚合提速对比：
+            - 30-100倍。以1w的基数为例，结果集为1
+            - 每次实时查询1w原始指标，聚合 VS 后台record 给我不断查询聚合结果集1 
+        - 预聚合提速资源开销：
+            - record在每时每刻的instance_query的
+            - 这个结果值会被多次查询到：利用率最高
+            - 长期存在的、顽固的重查询语句
+        - pre_query的项目：
+            - record
+            - cosul
+            - lua
+            - redis
+            - python
+- 告警
+    - day04
+        - 思考告警系统需要实现的功能
+            - 告警触发函数：
+                - all
+                - happen
+                - any
+            - 发送的通道
+            - 回调
+            - 升级
+            - 静默
+            - 聚合
+            - 分组
+            - 抑制
+            - 是否发送recovery信息
+            - 实时聚合 ：sum(xxxx) > 80
+        - prometheus 告警触发原理：
+            - rule file：
+                 - expr 、for 、annotation、value 
+                 - 做instance_query查询：
+                    - 本地
+                    - remote
+                 - 查看是否到了for时间 ： 发送给alertmanager处理   
+            - alertmanager：
+                - 根据配置好route+receive 分发告警
+                - regex 匹配 ：
+                    - continue
+                - inhibit：
+                    - a触发了就屏蔽 b：same label
+                - silence：
+                    - 根据label静默
+                  
+                - 聚合：
+                    - group_wait 、group_interval
+                - ha：gossip：去重
+        - 和运维平台对接：
+            - 告警配置页面化：
+                - rule.yml
+                - alertmanger.yml
+        - 企业微信通道的对接
+        - 回调实战：
+            - 重启服务、抓火焰图            
+
+
+

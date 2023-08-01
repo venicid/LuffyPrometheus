@@ -1,0 +1,46 @@
+- name: init syslog logrotate
+  hosts: all
+  user: root
+  gather_facts:  false
+  vars:
+      app_log_path: /opt/logs/
+      sc_path: /opt/tgzs/
+      syslog_conf: syslog_server.conf
+      logrotate_conf: logrotate.conf
+
+  tasks:
+
+      - name: mkdir
+        file: path={{ app_log_path }} state=directory
+      
+
+      - name: copy  files
+        copy:
+          src: '{{ item.src }}'
+          dest: '{{ item.dest }}'
+          owner: root
+          group: root
+          mode: 0644
+          force: true
+
+        with_items:
+          - { src: '{{ sc_path }}/{{ syslog_conf }}', dest: '/etc/rsyslog.d/{{ syslog_conf }}' }
+          - { src: '{{ sc_path }}/{{ logrotate_conf }}', dest: '/etc/logrotate.d/{{ logrotate_conf }}' }
+        register: result
+
+      - name: Show debug info
+        debug: var=result verbosity=0
+
+
+      - name: restart service
+
+        systemd:
+          name: "{{ item }}"
+          state: restarted
+          daemon_reload: yes
+        with_items:
+          - 'rsyslog'
+        register: result
+
+      - name: Show debug info
+        debug: var=result verbosity=0

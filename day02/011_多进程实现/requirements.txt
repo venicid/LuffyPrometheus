@@ -1,0 +1,7 @@
+# yum install python3-devel  -y
+python-consul
+PyYaml
+mmh3
+#ansible
+prometheus-client
+multiprocessing-logging

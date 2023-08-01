@@ -1,0 +1,37 @@
+global:
+  resolve_timeout: 30m
+
+route:
+  group_by: ['alertname']
+  group_wait: 5s
+  group_interval: 5s
+  repeat_interval: 1h
+  receiver: 'sre_all'
+  routes:                                       #子路由，父路由的所有属性都会被子路由继承
+    - match_re:                                   #此路由在警报标签上执行正则表达式匹配，以捕获与服务列表相关的警报
+        job: node_exporter
+      receiver: sre_system
+      # 代表继续向下匹配，不然就break了
+      # 只能向下匹配
+      continue: true
+    - match_re:
+        job: mysqld_exporter
+      receiver: sre_dba
+      continue: true
+      # 默认all路由
+    - match_re:
+        job: .*
+      receiver: sre_all
+      continue: true
+
+
+receivers:
+- name: 'sre_system'
+  webhook_configs:
+  - url: 'http://127.0.0.1:5001/alert'
+- name: 'sre_dba'
+  webhook_configs:
+  - url: 'http://127.0.0.1:5002/alert'
+- name: 'sre_all'
+  webhook_configs:
+  - url: 'http://127.0.0.1:5003/alert'

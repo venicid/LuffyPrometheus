@@ -1,0 +1,13 @@
+groups:
+ - name: g12
+   rules:
+   - alert: mem_callback
+     expr: node_memory_MemTotal_bytes > 0
+     for: 10s
+     labels:
+       user: prometheus
+       severity: warning
+     annotations:
+       summary: "服务器: {{$labels.alertname}} 内存报警"
+       description: "回调测试"
+       value: "{{ $value }}"

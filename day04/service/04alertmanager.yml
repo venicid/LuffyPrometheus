@@ -1,0 +1,22 @@
+global:
+  resolve_timeout: 30m
+  wechat_api_url: 'https://qyapi.weixin.qq.com/cgi-bin/'
+  wechat_api_corp_id: 'ww673bab2f736da067'      # 企业微信中企业ID
+  wechat_api_secret: 'X-bV75Lz8U-RTuRJdIosBzzHVQaI5Zvr3gRRFYzDmTs'      # 企业微信中，应用的Secret
+templates:
+  - '/opt/app/alertmanager/template/*.tmpl'
+route:
+  group_by: ['alertname']
+  group_wait: 5s
+  group_interval: 5s
+  repeat_interval: 1h
+  receiver: 'wechat'
+
+receivers:
+- name: 'wechat'
+  wechat_configs:
+  - send_resolved: true
+    message: '{{ template "wechat.default.message" . }}'
+    to_party: '2'         # 企业微信中创建的接收告警的部门【告警机器人】的部门ID
+    agent_id: '1000002'     # 企业微信中创建的应用的ID
+    api_secret: 'X-bV75Lz8U-RTuRJdIosBzzHVQaI5Zvr3gRRFYzDmTs'      # 企业微信中，应用的Secret

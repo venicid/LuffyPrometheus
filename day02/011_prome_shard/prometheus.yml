@@ -1,0 +1,179 @@
+# my global config
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+    - targets: ['localhost:9090']
+
+  #- job_name: node_exporter
+  #  honor_timestamps: true
+  #  scrape_interval: 15s
+  #  scrape_timeout: 10s
+  #  #metrics_path: /metrics
+  #  #scheme: http
+  #  static_configs:
+  #  - targets:
+  #    - 192.168.0.112:9100
+  #    - 192.168.0.127:9100
+  #    - 192.168.0.128:9100
+  #    - 192.168.0.112:3000
+
+  - job_name: mysqld_exporter
+    honor_timestamps: true
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    #metrics_path: /metrics
+    #scheme: http
+    static_configs:
+
+    - targets:
+      - 192.168.0.112:9104
+
+  - job_name: process-exporter
+    honor_timestamps: true
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    #metrics_path: /metrics
+    #scheme: http
+    static_configs:
+    - targets:
+      - 192.168.0.112:9256
+      - 192.168.0.127:9256
+ 
+
+
+  - job_name: 'blackbox-http'
+    # metrics的path 注意不都是/metrics
+    metrics_path: /probe
+    # 传入的参数
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    file_sd_configs:
+      - files:
+          - /opt/app/prometheus/sd/blackbox_http.json
+        refresh_interval: 2m
+    #static_configs:
+    #  - targets:
+    #    - http://prometheus.io    # Target to probe with http.
+    #    - https://www.baidu.com   # Target to probe with https.
+    #    - http://192.168.0.112:3000 # Target to probe with http on port 3000.
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.0.112:9115  # The blackbox exporter's real hostname:port.
+
+
+  - job_name: 'blackbox-ssh'
+    # metrics的path 注意不都是/metrics
+    metrics_path: /probe
+    # 传入的参数
+    params:
+      module: [ssh_banner]  # Look for a HTTP 200 response.
+    static_configs:
+      - targets:
+        - 192.168.0.112:22    # Target to probe with http.
+        - 192.168.0.127:22   # Target to probe with https.
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.0.112:9115  # The blackbox exporter's real hostname:port.
+        
+        
+  - job_name: 'blackbox-ping'
+    # metrics的path 注意不都是/metrics
+    metrics_path: /probe
+    # 传入的参数
+    params:
+      module: [icmp]  # Look for a HTTP 200 response.
+    static_configs:
+      - targets:
+        - 192.168.0.112    # Target to probe with http.
+        - 192.168.0.127   # Target to probe with https.
+        - 114.114.114.114   # Target to probe with https.
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.0.112:9115  # The blackbox exporter's real hostname:port.        
+        
+        
+  ## config for the multiple Redis targets that the exporter will scrape
+  - job_name: 'redis_exporter_targets'
+    static_configs:
+      - targets:
+        - redis://192.168.0.112:6379
+        - redis://192.168.0.112:6479
+    metrics_path: /scrape
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.0.112:9121
+
+  - job_name: 'pushgateway'
+    honor_timestamps: true
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+    - targets:
+      - 192.168.0.112:9091
+      - 192.168.0.127:9091
+
+  - job_name: 'node_exporter'
+    # metrics的path 注意不都是/metrics
+    # 传入的参数
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    scheme: http
+    honor_timestamps: false
+    file_sd_configs:
+    - files:
+      - /opt/app/prometheus/sd/node_exporter.json
+      refresh_interval: 2m
+
+  - job_name: 'shard_job'
+    # metrics的path 注意不都是/metrics
+    # 传入的参数
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    scheme: http
+    honor_timestamps: false
+    file_sd_configs:
+    - files:
+      - /opt/app/prometheus/sd/file_sd_by_prome_shared.json
+      refresh_interval: 2m

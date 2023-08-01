@@ -1,0 +1,12 @@
+[Unit]
+Description=consul server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/consul agent  -config-file=/opt/app/consul/single_server.json
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=consul
+[Install]
+WantedBy=default.target

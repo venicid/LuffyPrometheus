@@ -1,0 +1,16 @@
+global:
+  resolve_timeout: 30m
+
+route:
+  group_by: ['alertname']
+  group_wait: 5s
+  group_interval: 5s
+  repeat_interval: 1h
+  receiver: 'callback'
+  routes:                                       #子路由，父路由的所有属性都会被子路由继承
+
+
+receivers:
+- name: 'callback'
+  webhook_configs:
+  - url: 'http://127.0.0.1:5004/alert/callback'

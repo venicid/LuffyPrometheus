@@ -1,0 +1,13 @@
+[Unit]
+Description=mysqld_exporter Exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Environment=DATA_SOURCE_NAME=exporter:123123@tcp/
+ExecStart=/opt/app/mysqld_exporter/mysqld_exporter
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=mysqld_exporter
+[Install]
+WantedBy=default.target

@@ -1,0 +1,53 @@
+- name:  install
+  hosts: all
+  user: root
+  gather_facts:  false
+  vars:
+      local_path: /opt/tgzs
+      app_dir: /opt/app
+
+  tasks:
+      - name: mkdir
+        file: path={{ app_dir }}/{{ app }} state=directory
+      - name: mkdir
+        file: path={{ local_path }} state=directory
+
+
+      - name: copy  config and service
+        copy:
+          src: '{{ item.src }}'
+          dest: '{{ item.dest }}'
+          owner: root
+          group: root
+          mode: 0644
+          force: true
+
+        with_items:
+          - { src: '{{ local_path }}/{{ tgz }}', dest: '{{ local_path }}/{{ tgz }}' }
+          - { src: '{{ local_path }}/{{ app }}.service', dest: '/etc/systemd/system/{{ app }}.service' }
+
+        register: result
+      - name: Show debug info 
+        debug: var=result verbosity=0
+
+      - name: tar gz
+        shell: rm -rf /root/{{ app }}* ; \
+          tar xf {{ local_path }}/{{ tgz }} -C /root/ ; \
+          /bin/cp -far /root/{{ app }}*/* {{ app_dir }}/{{ app }}/ \
+
+        register: result
+      - name: Show debug info
+        debug: var=result verbosity=0
+
+      - name: restart service
+        systemd:
+          name: "{{ item }}"
+          state: restarted
+          daemon_reload: yes
+          enabled: yes
+        with_items:
+          - '{{ app }}'
+        register: result
+
+      - name: Show debug info
+        debug: var=result verbosity=0

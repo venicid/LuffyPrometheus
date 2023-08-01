@@ -1,0 +1,9 @@
+# yum install python3-devel  -y
+# 需要更新下pip  pip3 install --upgrade pip
+# pip3 install ansible==2.9.9
+python-consul
+PyYaml
+mmh3
+ansible==2.9.9
+prometheus-client
+multiprocessing-logging

@@ -1,0 +1,12 @@
+[Unit]
+Description=Node Exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/opt/app/node_exporter/node_exporter
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=node_exporter
+[Install]
+WantedBy=default.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=blackbox_exporter Exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/opt/app/blackbox_exporter/blackbox_exporter --config.file=/opt/app/blackbox_exporter/blackbox.yml
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=blackbox_exporter
+[Install]
+WantedBy=default.target

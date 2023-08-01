@@ -1,0 +1,12 @@
+bin/
+bin/*
+out/
+*.swp
+*.swo
+*.tar.gz
+docs/_site
+.idea/
+package_cache_tmp/
+/.idea
+*DS_Store
+.__pycache__/

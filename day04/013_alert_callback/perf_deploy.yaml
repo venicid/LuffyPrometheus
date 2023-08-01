@@ -1,0 +1,45 @@
+- name:  install
+  hosts: all
+  user: root
+  gather_facts:  false
+  vars:
+      local_path: /App/tgzs
+      sc_path: /App/tgzs/conf_dir/perf_work
+      target_path: /App/perf
+      perf_cron: /etc/cron.d/perf_cron
+  tasks:
+
+
+
+      - name: mkdir
+        file: path={{ target_path }} state=directory
+
+      - name: install app
+        yum:
+          name: perf
+          state: present
+
+
+      - name: copy  config and service
+        copy:
+          src: '{{ item.src }}'
+          dest: '{{ item.dest }}'
+          owner: root
+          group: root
+          mode: 0644
+          force: true
+
+        with_items:
+          - { src: '{{ sc_path }}/perf.sh', dest: '{{ target_path }}/perf.sh' }
+          - { src: '{{ sc_path }}/perf_cron', dest: '{{ perf_cron }}' }
+
+
+        register: result
+      - name: Show debug info 
+        debug: var=result verbosity=0 
+
+      - name: run replace
+        shell: sed -i  's/ORIGIN_APP/{{ app }}/' /etc/cron.d/perf_cron
+        register: result
+      - name: Show debug info
+        debug: var=result verbosity=0

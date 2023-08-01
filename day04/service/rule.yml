@@ -1,0 +1,21 @@
+groups:
+- name: alert_g_1
+  rules:
+  - alert: node_load too high
+    expr:  node_memory_Active_bytes>0
+    labels:
+      severity: critical
+      node_name: abc
+    annotations:
+      summary: 机器太累了
+
+- name: alert_g_2
+  rules:
+  - alert: mysql_qps too high
+    expr: mysql_global_status_queries >0
+    labels:
+      severity: warning
+      node_name: abc
+    annotations:
+      summary: mysql太累了
+
